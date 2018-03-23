@@ -8,6 +8,8 @@ data Token =
     Number Decimal |
     GroupOpen |
     GroupClose |
+    Text String |
+    Eq |
 
     Factorial |
     Mult |
@@ -36,6 +38,7 @@ tokenize ('&':input) tokens     = tokenize input $ tokens ++ [BitAnd]
 tokenize ('^':input) tokens     = tokenize input $ tokens ++ [BitXor]
 tokenize ('|':input) tokens     = tokenize input $ tokens ++ [BitOr]
 
+tokenize ('=':input) tokens     = tokenize input $ tokens ++ [Eq]
 tokenize ('(':input) tokens = tokenize input $ tokens ++ [GroupOpen]
 tokenize (')':input) tokens = tokenize input $ tokens ++ [GroupClose]
 tokenize (c:input) tokens
@@ -51,11 +54,16 @@ tokenize (c:input) tokens
         tokenize (dropWhile predicate input2) (tokens ++ [Number num])
       ('0', True, ('b':input2)) -> do
         let predicate = (\c -> c == '0' || c == '1')
-        let convert = (\c -> ord c - ord '0')
+        let convert = (subtract $ ord '0') . ord
         let [(num, _)] = readInt 2 predicate convert $ takeWhile predicate input2
         tokenize (dropWhile predicate input2) (tokens ++ [Number num])
       _ -> do
         let predicate = (\c -> (c >= '0' && c <= '9') || c == '.')
         let num = read $ takeWhile predicate (c:input)
         tokenize (dropWhile predicate input) (tokens ++ [Number num])
+  | (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') = do
+    let predicate = (\c -> (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+    let text = takeWhile predicate (c:input)
+    let input2 = dropWhile predicate input
+    tokenize input2 $ tokens ++ [Text text]
   | otherwise = Left $ "undefined token: " ++ show c

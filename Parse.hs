@@ -1,12 +1,12 @@
 module Parse where
 
 import Data.Decimal
-import Data.Either
-import Data.Maybe
 import qualified Tokenize as T
 
 data AST =
     Number Decimal |
+    VarGet String |
+    VarSet String AST |
 
     Factorial AST  |
     Mult      AST AST |
@@ -31,19 +31,17 @@ parse tokens = do
 
 parseLoop :: [T.Token] -> AST -> Either [Char] AST
 parseLoop tokens ast = do
-  case tokens of
-    [] -> Right ast
-    _  -> do
-      (tokens2, ast2) <- parseTopLevel tokens ast
-      case tokens2 of
-        (T.Number n:_) -> Left $ "expected operator, found number " ++ show n
-        (T.GroupOpen:_) -> do
-          parseLoop (T.Mult:tokens2) ast2
-        (T.GroupClose:_) -> Left "expected operator, found )"
-        _ -> do
-          if tokens == tokens2
-            then Left "stuck in infinite loop"
-            else parseLoop tokens2 ast2
+  (tokens2, ast2) <- parseTopLevel tokens ast
+  case tokens2 of
+    (T.Number n:_) -> Left $ "expected operator, found number " ++ show n
+    (T.GroupOpen:_) -> do
+      parseLoop (T.Mult:tokens2) ast2
+    (T.GroupClose:_) -> Left "expected operator, found )"
+    [] -> Right $ ast2
+    _ -> do
+      if tokens == tokens2
+        then Left $ "stuck in infinite loop (tokens left: " ++ show tokens ++ ")"
+        else parseLoop tokens2 ast2
 
 parseTopLevel :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
 parseTopLevel = parseBitOr
@@ -85,25 +83,33 @@ applyTwo token kind token2 kind2 nextFn (o:tokens) n1 = do
 parseBitOr  = apply T.BitOr BitOr parseBitXor
 parseBitXor = apply T.BitXor BitXor parseBitAnd
 parseBitAnd = apply T.BitAnd BitAnd parseBitShift
-
 parseBitShift = applyTwo T.BitShiftL BitShiftL T.BitShiftR BitShiftR parsePlus
+
 parsePlus = applyTwo T.Plus Add T.Minus Sub parseMult
 parseMult = applyTwo T.Mult Mult T.Div Div parseFac
 
 parseFac :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
-parseFac [] ast = Right ([], ast)
-parseFac (o:tokens) n1 = do
-  if o == T.Factorial
-    then Right (tokens, Factorial n1)
-    else Right ((o:tokens), n1)
+parseFac (T.Factorial:tokens) n = Right (tokens, Factorial n)
+parseFac tokens ast = parseVar tokens ast
+
+parseVar :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
+parseVar (T.Eq:tokens) n = do
+  case n of
+    VarGet var -> do
+      (tokens2, tmp) <- parseNum tokens
+      (tokens3, val) <- parseTopLevel tokens2 tmp
+      Right (tokens3, VarSet var val)
+    t -> Left $ "assignment expected name, got " ++ show t
+parseVar tokens ast = Right (tokens, ast)
 
 parseNum :: [T.Token] -> Either [Char] ([T.Token], AST)
 
 parseNum (T.Minus:T.Number n:tokens) = Right (tokens, Number $ -n)
 parseNum (T.Number n:tokens) = Right (tokens, Number n)
+parseNum (T.Text var:tokens) = Right (tokens, VarGet var)
 parseNum (T.GroupOpen:tokens) = do
   (tokens2, tmp)  <- parseNum tokens
-  (tokens3, ast2) <- parsePlus tokens2 tmp
+  (tokens3, ast2) <- parseTopLevel tokens2 tmp
   case tokens3 of
     [] -> Left "expected ), got EOF"
     (T.GroupClose:tokens4) -> Right (tokens4, ast2)
