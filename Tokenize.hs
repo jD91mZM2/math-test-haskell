@@ -1,7 +1,7 @@
 module Tokenize where
   import Data.Decimal
 
-  data Token = Number Decimal | Plus | Minus | Mult | Div
+  data Token = Number Decimal | Plus | Minus | Mult | Div | Factorial
     deriving (Show, Eq)
 
   tokenize :: [Char] -> [Token] -> [Token]
@@ -12,6 +12,7 @@ module Tokenize where
     | c == '-' = tokenize input $ tokens ++ [Minus]
     | c == '*' = tokenize input $ tokens ++ [Mult]
     | c == '/' = tokenize input $ tokens ++ [Div]
+    | c == '!' = tokenize input $ tokens ++ [Factorial]
     | c >= '0' && c <= '9' = do
       let predicate = (\c -> (c >= '0' && c <= '9') || c == '.')
       let num = read $ takeWhile predicate (c:input)
