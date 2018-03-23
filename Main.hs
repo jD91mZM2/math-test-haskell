@@ -4,6 +4,9 @@ import Eval
 import Parse
 import Tokenize
 
+-- Because a CPP preprocessor is too much work
+isDebug = False
+
 mainLoop :: IO ()
 mainLoop = do
   line <- readline "> "
@@ -15,13 +18,16 @@ mainLoop = do
       case tokenize line [] of
         Left err -> putStrLn $ "tokenize error: " ++ err
         Right tokens -> do
-          putStrLn $ "Debug: " ++ show tokens
+          if isDebug
+            then putStrLn $ "Debug: " ++ show tokens
+            else do return ()
           case parse tokens of
             Left err -> putStrLn $ "parse error: " ++ err
             Right ast -> do
-              putStrLn $ "Debug: " ++ show ast
+              if isDebug
+                then putStrLn $ "Debug: " ++ show ast
+                else do return ()
               print $ eval ast
       mainLoop
 
-main = do
-  mainLoop
+main = mainLoop

@@ -46,7 +46,7 @@ parsePlus (o:tokens) n1 = do
       Right (tokens3, Add n1 n2)
     else
       Right (tokens3, Sub n1 n2)
-  else do
+  else
     parseMult (o:tokens) n1
 
 parseMult :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
@@ -59,15 +59,15 @@ parseMult (o:tokens) n1 = do
       Right (tokens3, Mult n1 n2)
     else
       Right (tokens3, Div n1 n2)
-  else do
+  else
     parseFac (o:tokens) n1
 
 parseFac :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
 parseFac [] ast = Right ([], ast)
 parseFac (o:tokens) n1 = do
-  if o == T.Factorial then do
+  if o == T.Factorial then
     Right (tokens, Factorial n1)
-  else do
+  else
     Right ((o:tokens), n1)
 
 parseNum :: [T.Token] -> Either [Char] ([T.Token], AST)
