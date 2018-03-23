@@ -5,7 +5,7 @@ import Parse
 import Tokenize
 
 -- Because a CPP preprocessor is too much work
-isDebug = False
+isDebug = True
 
 mainLoop :: IO ()
 mainLoop = do

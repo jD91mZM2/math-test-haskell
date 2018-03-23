@@ -9,14 +9,20 @@ data AST =
     Number Decimal |
 
     Factorial AST  |
-    Mult   AST AST |
-    Div    AST AST |
-    Add    AST AST |
-    Sub    AST AST |
-    BitAnd AST AST |
-    BitXor AST AST |
-    BitOr  AST AST
+    Mult      AST AST |
+    Div       AST AST |
+    Add       AST AST |
+    Sub       AST AST |
+    BitShiftL AST AST |
+    BitShiftR AST AST |
+    BitAnd    AST AST |
+    BitXor    AST AST |
+    BitOr     AST AST
   deriving Show
+
+----------------------
+-- Helper functions --
+----------------------
 
 parse :: [T.Token] -> Either [Char] AST
 parse tokens = do
@@ -55,33 +61,34 @@ apply token kind nextFn (o:tokens) n1 = do
   else
     nextFn (o:tokens) n1
 
+applyTwo :: T.Token ->
+            (AST -> AST -> AST) ->
+            T.Token ->
+            (AST -> AST -> AST) ->
+            ([T.Token] -> AST -> Either [Char] ([T.Token], AST)) ->
+            [T.Token] -> AST -> Either [Char] ([T.Token], AST)
+applyTwo _ _ _ _ _ [] ast = Right ([], ast)
+applyTwo token kind token2 kind2 nextFn (o:tokens) n1 = do
+  if o == token || o == token2 then do
+    (tokens2, tmp) <- parseNum tokens
+    (tokens3, n2)  <- nextFn tokens2 tmp
+    if o == token
+      then Right (tokens3, kind  n1 n2)
+      else Right (tokens3, kind2 n1 n2)
+  else
+    nextFn (o:tokens) n1
+
+--------------------
+-- Actual parsing --
+--------------------
+
 parseBitOr  = apply T.BitOr BitOr parseBitXor
 parseBitXor = apply T.BitXor BitXor parseBitAnd
-parseBitAnd = apply T.BitAnd BitAnd parsePlus
+parseBitAnd = apply T.BitAnd BitAnd parseBitShift
 
-parsePlus :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
-parsePlus [] ast = Right ([], ast)
-parsePlus (o:tokens) n1 = do
-  if o == T.Plus || o == T.Minus then do
-    (tokens2, tmp) <- parseNum tokens
-    (tokens3, n2)  <- parseMult tokens2 tmp
-    if o == T.Plus
-      then Right (tokens3, Add n1 n2)
-      else Right (tokens3, Sub n1 n2)
-  else
-    parseMult (o:tokens) n1
-
-parseMult :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
-parseMult [] ast = Right ([], ast)
-parseMult (o:tokens) n1 = do
-  if o == T.Mult || o == T.Div then do
-    (tokens2, tmp) <- parseNum tokens
-    (tokens3, n2)  <- parseFac tokens2 tmp
-    if o == T.Mult
-      then Right (tokens3, Mult n1 n2)
-      else Right (tokens3, Div n1 n2)
-  else
-    parseFac (o:tokens) n1
+parseBitShift = applyTwo T.BitShiftL BitShiftL T.BitShiftR BitShiftR parsePlus
+parsePlus = applyTwo T.Plus Add T.Minus Sub parseMult
+parseMult = applyTwo T.Mult Mult T.Div Div parseFac
 
 parseFac :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
 parseFac [] ast = Right ([], ast)
