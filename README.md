@@ -15,11 +15,11 @@ I don't care, I wanted to learn Haskell.
 Here's a checklist on what's done:
 
  - [x] Arbritary-length ("big") numbers. (Thanks to library "Decimal")
- - [x] Decimal numbers.
+ - [x] Decimal numbers
+ - [x] Negative numbers
  - [x] Order of operation
  - [x] Proper parser (tokenize -> parse -> evaluate)
  - [ ] Binary/Octal/Hexadecimal
  - [ ] Bitwise operators
  - [ ] Factorial
  - [ ] Function system
- - [ ] Negative numbers

@@ -14,42 +14,42 @@ module Parse where
 
   parse :: [T.Token] -> Either [Char] AST
   parse (t:tokens) = do
-    n <- parseNum t
-    out <- parsePlus tokens n
-    let (tokens, ast) = out
+    (tokens2, n) <- parseNum (t:tokens)
+    (_, ast) <- parsePlus tokens2 n
     Right ast
 
   parsePlus :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
   parsePlus [] ast = Right ([], ast)
   parsePlus (t:[]) ast = do
-    n <- parseNum t
-    Right ([t], n)
+    out <- parseNum [t]
+    Right out
   parsePlus (o:t:tokens) n1 = do
     if o == T.Plus || o == T.Minus then do
-      tmp <- parseNum t
-      (tokens2, n2) <- parseMult tokens tmp
+      (tokens2, tmp) <- parseNum (t:tokens)
+      (tokens3, n2) <- parseMult tokens2 tmp
       if o == T.Plus then
-        parsePlus tokens2 $ Add n1 n2
+        parsePlus tokens3 $ Add n1 n2
       else
-        parsePlus tokens2 $ Sub n1 n2
+        parsePlus tokens3 $ Sub n1 n2
     else do
       parseMult (o:t:tokens) n1
 
   parseMult :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
   parseMult [] ast = Right ([], ast)
   parseMult (t:[]) ast = do
-    n <- parseNum t
-    Right ([t], n)
+    (tokens, n) <- parseNum [t]
+    Right (tokens, n)
   parseMult (o:t:tokens) n1 = do
     if o == T.Mult || o == T.Div then do
-      n2 <- parseNum t
+      (tokens2, n2) <- parseNum (t:tokens)
       if o == T.Mult then
-        parsePlus tokens $ Mult n1 n2
+        parsePlus tokens2 $ Mult n1 n2
       else
-        parsePlus tokens $ Div n1 n2
+        parsePlus tokens2 $ Div n1 n2
     else do
       Right (o:t:tokens, n1)
 
-  parseNum :: T.Token -> Either [Char] AST
-  parseNum (T.Number n) = Right $ Number n
-  parseNum t = Left $ "expected number, got " ++ show t
+  parseNum :: [T.Token] -> Either [Char] ([T.Token], AST)
+  parseNum (T.Minus:T.Number n:tokens) = Right (tokens, Number $ -n)
+  parseNum (T.Number n:tokens) = Right (tokens, Number n)
+  parseNum (t:_) = Left $ "expected number, got " ++ show t
