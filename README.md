@@ -16,13 +16,13 @@ Here's a checklist on what's done:
 
  - [x] Arbritary-length ("big") numbers. (Thanks to library "Decimal")
  - [x] Automatically insert \* when using groups
+ - [x] Binary/Octal/Hexadecimal
  - [x] Decimal numbers
  - [x] Factorial
  - [x] Groups (Parenthesis)
  - [x] Negative numbers
  - [x] Order of operation
  - [x] Proper parser (tokenize -> parse -> evaluate)
- - [ ] Binary/Octal/Hexadecimal
  - [ ] Bitwise operators
  - [ ] Function system
  - [ ] Variables
