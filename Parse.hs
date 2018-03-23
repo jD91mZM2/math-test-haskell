@@ -27,8 +27,14 @@ parseLoop tokens ast = do
       (tokens2, ast2) <- parsePlus tokens ast
       case tokens2 of
         (T.Number n:_) -> Left $ "expected operator, found number " ++ show n
-        (T.GroupClose:_) -> Left "expected operator, found ) "
-        _ -> parseLoop tokens2 ast2
+        (T.GroupOpen:_) -> do
+          parseLoop (T.Mult:tokens2) ast2
+        (T.GroupClose:_) -> Left "expected operator, found )"
+        _ -> do
+          if tokens == tokens2 then
+            Left "stuck in infinite loop"
+          else
+            parseLoop tokens2 ast2
 
 parsePlus :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
 parsePlus [] ast = Right ([], ast)

@@ -15,6 +15,7 @@ I don't care, I wanted to learn Haskell.
 Here's a checklist on what's done:
 
  - [x] Arbritary-length ("big") numbers. (Thanks to library "Decimal")
+ - [x] Automatically insert \* when using groups
  - [x] Decimal numbers
  - [x] Factorial
  - [x] Groups (Parenthesis)
