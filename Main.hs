@@ -20,6 +20,9 @@ mainLoop map = do
         Left err -> do
           putStrLn $ "tokenize error: " ++ err
           mainLoop map
+        Right [] -> do
+          putStrLn "\x1b[A|"
+          mainLoop map
         Right tokens -> do
           if isDebug
             then putStrLn $ "Debug: " ++ show tokens
@@ -39,7 +42,7 @@ mainLoop map = do
                   putStrLn $ "eval error: " ++ err
                   mainLoop map
                 Right (map2, n) -> do
-                  print n
+                  putStrLn $ "= " ++ show n
                   mainLoop map2
 
 main = mainLoop M.empty
