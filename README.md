@@ -12,7 +12,8 @@ I don't care, I wanted to learn Haskell.
 
 ## When is this?
 
-Here's a checklist on what's done:
+~~Here's a checklist on what's done:~~  
+Everything is done! Woo!
 
  - [x] Arbritary-length ("big") numbers. (Thanks to library "Decimal")
  - [x] Automatically insert \* when using groups
@@ -20,9 +21,9 @@ Here's a checklist on what's done:
  - [x] Bitwise operators
  - [x] Decimal numbers
  - [x] Factorial
+ - [x] Function system
  - [x] Groups (Parenthesis)
  - [x] Negative numbers
  - [x] Order of operation
  - [x] Proper parser (tokenize -> parse -> evaluate)
- - [ ] Function system
- - [ ] Variables
+ - [x] Variables

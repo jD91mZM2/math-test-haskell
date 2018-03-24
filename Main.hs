@@ -6,7 +6,7 @@ import Tokenize
 import qualified Data.HashMap as M
 
 -- Because a CPP preprocessor is too much work
-isDebug = True
+isDebug = False
 
 mainLoop :: M.Map String AST -> IO ()
 mainLoop map = do
@@ -16,7 +16,7 @@ mainLoop map = do
     Just "exit" -> return ()
     Just line   -> do
       addHistory line
-      case tokenize line [] of
+      case tokenize line True [] of
         Left err -> do
           putStrLn $ "tokenize error: " ++ err
           mainLoop map
@@ -34,8 +34,12 @@ mainLoop map = do
                   putStrLn $ "Debug: " ++ show ast
                   putStrLn $ "Variables: " ++ show (M.toList map)
                 else do return ()
-              let (map2, n) = eval map ast
-              print n
-              mainLoop map2
+              case eval map ast of
+                Left err -> do
+                  putStrLn $ "eval error: " ++ err
+                  mainLoop map
+                Right (map2, n) -> do
+                  print n
+                  mainLoop map2
 
 main = mainLoop M.empty
