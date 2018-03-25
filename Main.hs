@@ -1,9 +1,9 @@
 import System.Console.Readline
+import qualified Data.HashMap as M
 
 import Eval
 import Parse
 import Tokenize
-import qualified Data.HashMap as M
 
 -- Because a CPP preprocessor is too much work
 isDebug = False
