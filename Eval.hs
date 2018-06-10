@@ -42,13 +42,14 @@ apply map fn n1 n2 = do
 applyInt :: (Integral i) => Map -> (Integer -> i -> Integer) -> P.AST -> P.AST -> Either [Char] (Map, Decimal)
 applyInt map fn n1 n2 = do
   (map2, [e1, e2]) <- evalAll map [n1, n2] []
-  Right (map2, fromInteger $ fn (floor e1) (floor e2))
+  Right (map2, fromIntegral $ fn (floor e1) (floor e2))
 
 eval :: Map -> P.AST -> Either [Char] (Map, Decimal)
 eval map (P.Factorial n)  = applyOne map fac n
 eval map (P.Mult n1 n2)   = apply map (*) n1 n2
 eval map (P.Pow n1 n2)    = apply map pow n1 n2
 eval map (P.Div n1 n2)    = apply map (/) n1 n2
+eval map (P.Rem n1 n2)    = applyInt map rem n1 n2
 eval map (P.Add n1 n2)    = apply map (+) n1 n2
 eval map (P.Sub n1 n2)    = apply map (-) n1 n2
 eval map (P.BitShiftL n1 n2) = applyInt map shiftL n1 n2

@@ -16,7 +16,8 @@ mainLoop map = do
     Just "exit" -> return ()
     Just line   -> do
       addHistory line
-      case tokenize line True [] of
+
+      case tokenize line of
         Left err -> do
           putStrLn $ "tokenize error: " ++ err
           mainLoop map
@@ -27,6 +28,7 @@ mainLoop map = do
           if isDebug
             then putStrLn $ "Debug: " ++ show tokens
             else do return ()
+
           case parse tokens of
             Left err -> do
               putStrLn $ "parse error: " ++ err
@@ -37,6 +39,7 @@ mainLoop map = do
                   putStrLn $ "Debug: " ++ show ast
                   putStrLn $ "Variables: " ++ show (M.toList map)
                 else do return ()
+
               case eval map ast of
                 Left err -> do
                   putStrLn $ "eval error: " ++ err
@@ -45,4 +48,5 @@ mainLoop map = do
                   putStrLn $ "= " ++ show n
                   mainLoop map2
 
+main :: IO ()
 main = mainLoop M.empty

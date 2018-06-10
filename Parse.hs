@@ -14,6 +14,7 @@ data AST =
     Pow       AST AST |
     Mult      AST AST |
     Div       AST AST |
+    Rem       AST AST |
     Add       AST AST |
     Sub       AST AST |
     BitShiftL AST AST |
@@ -46,50 +47,35 @@ parseLoop tokens ast = do
         then Left $ "stuck in infinite loop (tokens left: " ++ show tokens ++ ")"
         else parseLoop tokens2 ast2
 
-parseTopLevel :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
+type Return = Either [Char] ([T.Token], AST)
+
+parseTopLevel :: [T.Token] -> AST -> Return
 parseTopLevel = parseBitOr
 
-apply :: T.Token ->
-         (AST -> AST -> AST) ->
-         ([T.Token] -> AST -> Either [Char] ([T.Token], AST)) ->
-         [T.Token] -> AST -> Either [Char] ([T.Token], AST)
-apply _ _ _ [] ast = Right ([], ast)
-apply token kind nextFn (o:tokens) n1 = do
+apply :: [(T.Token, (AST -> AST -> AST))] ->
+            ([T.Token] -> AST -> Return) ->
+            [T.Token] -> AST -> Return
+apply _ _ [] ast = Right ([], ast)
+apply [] nextFn tokens n1 = nextFn tokens n1
+apply ((token, kind):rest) nextFn (o:tokens) n1 = do
   if o == token then do
     (tokens2, tmp) <- parseIdent tokens
     (tokens3, n2)  <- nextFn tokens2 tmp
     Right (tokens3, kind n1 n2)
   else
-    nextFn (o:tokens) n1
-
-applyTwo :: T.Token ->
-            (AST -> AST -> AST) ->
-            T.Token ->
-            (AST -> AST -> AST) ->
-            ([T.Token] -> AST -> Either [Char] ([T.Token], AST)) ->
-            [T.Token] -> AST -> Either [Char] ([T.Token], AST)
-applyTwo _ _ _ _ _ [] ast = Right ([], ast)
-applyTwo token kind token2 kind2 nextFn (o:tokens) n1 = do
-  if o == token || o == token2 then do
-    (tokens2, tmp) <- parseIdent tokens
-    (tokens3, n2)  <- nextFn tokens2 tmp
-    if o == token
-      then Right (tokens3, kind  n1 n2)
-      else Right (tokens3, kind2 n1 n2)
-  else
-    nextFn (o:tokens) n1
+    apply rest nextFn (o:tokens) n1
 
 --------------------
 -- Actual parsing --
 --------------------
 
-parseBitOr = applyTwo T.BitOr BitOr T.BitXor BitXor parseBitAnd
-parseBitAnd = apply T.BitAnd BitAnd parseBitShift
-parseBitShift = applyTwo T.BitShiftL BitShiftL T.BitShiftR BitShiftR parsePlus
+parseBitOr = apply [(T.BitOr, BitOr), (T.BitXor, BitXor)] parseBitAnd
+parseBitAnd = apply [(T.BitAnd, BitAnd)] parseBitShift
+parseBitShift = apply [(T.BitShiftL, BitShiftL), (T.BitShiftR, BitShiftR)] parsePlus
 
-parsePlus = applyTwo T.Plus Add T.Minus Sub parseMult
-parseMult = applyTwo T.Mult Mult T.Div Div parsePow
-parsePow  = apply T.Pow Pow parseFac
+parsePlus = apply [(T.Plus, Add), (T.Minus, Sub)] parseMult
+parseMult = apply [(T.Mult, Mult), (T.Div, Div), (T.Rem, Rem)] parsePow
+parsePow  = apply [(T.Pow, Pow)] parseFac
 
 parseFac :: [T.Token] -> AST -> Either [Char] ([T.Token], AST)
 parseFac (T.Factorial:tokens) n = Right (tokens, Factorial n)
