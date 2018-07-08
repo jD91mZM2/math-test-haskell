@@ -86,6 +86,10 @@ main = do
   test "binary" "0b101 | 0b010" 7
   test "octal"  "0o644 | 0o020" 436
   test "hex"    "0xFF + 1"    256
+  test "equal level" "100 - 50 * 50 / 4" (-525)
+  test "implicit multiplication" "100(4)" 400
+  test "implicit multiplication ordering" "100 + 100(4)" 500
+  test "implicit multiplication factorial" "5!(4)" 480
 
   putStr "testing randoms"
   testRandoms 99
