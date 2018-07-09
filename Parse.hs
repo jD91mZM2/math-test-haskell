@@ -102,12 +102,12 @@ parseImplicitMult (T.GroupOpen:tokens) n = do
 parseImplicitMult tokens ast = parseVar tokens ast
 
 parseVar :: [T.Token] -> AST -> Return
-parseVar (T.GroupClose:tokens) ast = Right ((T.GroupClose:tokens), ast)
 parseVar (T.Eq:tokens) (VarGet var) = do
   (tokens2, tmp) <- parseIdent tokens
   (tokens3, val) <- parseTopLevel tokens2 tmp
   Right (tokens3, VarSet var val)
 parseVar (T.Eq:tokens) ast = Left $ "assignment expected name, got " ++ show ast
+parseVar (T.GroupClose:tokens) (FnCall name args) = Right (T.GroupClose:tokens, FnCall name args)
 parseVar (t:tokens) (FnCall name args) = do
   (tokens2, arg) <- parseIdent (t:tokens)
   parseVar tokens2 $ FnCall name $ args ++ [arg]
@@ -118,10 +118,6 @@ parseIdent :: [T.Token] -> Either [Char] ([T.Token], AST)
 parseIdent (T.Minus:tokens) = do
   (tokens2, num) <- parseIdent tokens
   Right (tokens2, Negative num)
-parseIdent (T.Number n:T.GroupOpen:tokens) = do
-  (tokens2, num) <- parseIdent (T.Number n:tokens)
-  (tokens3, group) <- parseIdent (T.GroupOpen:tokens)
-  Right (tokens3, Mult num group)
 parseIdent (T.Number n:tokens) = Right (tokens, Number n)
 parseIdent (T.Text var:tokens) = Right (tokens, VarGet var)
 parseIdent (T.Fn:T.Text var:tokens) = Right (tokens, FnCall var [])
