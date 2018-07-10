@@ -65,12 +65,8 @@ applyInner matches ((token, kind):rest) nextFn (o:tokens) n1 = do
     (tokens2, tmp) <- parseIdent tokens
     (tokens3, n2)  <- nextFn tokens2 tmp
     let ast = kind n1 n2
-    case tokens3 of
-      [] -> Right (tokens3, kind n1 n2)
-      (token:_) -> do
-        if any ((== token) . fst) matches
-          then apply matches nextFn tokens3 ast
-          else Right (tokens3, ast)
+
+    parseTopLevel tokens3 ast
   else
     applyInner matches rest nextFn (o:tokens) n1
 
