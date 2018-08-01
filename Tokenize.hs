@@ -11,6 +11,7 @@ data Token =
     Text String |
     Eq |
     Fn |
+    BitNot |
 
     Factorial |
     Pow |
@@ -46,6 +47,7 @@ tokenize_ ('&':input) _ tokens     = tokenize_ input True $ tokens ++ [BitAnd]
 tokenize_ ('^':input) _ tokens     = tokenize_ input True $ tokens ++ [BitXor]
 tokenize_ ('|':input) _ tokens     = tokenize_ input True $ tokens ++ [BitOr]
 
+tokenize_ ('~':input) _ tokens = tokenize_ input True $ tokens ++ [BitNot]
 tokenize_ ('=':input) _ tokens = tokenize_ input True $ tokens ++ [Eq]
 tokenize_ ('(':input) _ tokens = tokenize_ input True $ tokens ++ [GroupOpen]
 tokenize_ (')':input) _ tokens = tokenize_ input True $ tokens ++ [GroupClose]

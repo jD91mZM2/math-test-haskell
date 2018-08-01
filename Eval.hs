@@ -34,6 +34,11 @@ applyOne map fn n = do
   (map2, e) <- eval map n
   Right (map2, fn e)
 
+applyOneInt :: Map -> (Integer -> Integer) -> P.AST -> Either [Char] (Map, Decimal)
+applyOneInt map fn n = do
+  (map2, e) <- eval map n
+  Right (map2, fromIntegral $ fn (floor e))
+
 apply :: Map -> (Decimal -> Decimal -> Decimal) -> P.AST -> P.AST -> Either [Char] (Map, Decimal)
 apply map fn n1 n2 = do
   (map2, [e1, e2]) <- evalAll map [n1, n2] []
@@ -76,3 +81,4 @@ eval map (P.FnCall name argsAST) = do
 
 eval map (P.Number n)   = Right (map, n)
 eval map (P.Negative n) = applyOne map negate n
+eval map (P.BitNot n) = applyOneInt map complement n

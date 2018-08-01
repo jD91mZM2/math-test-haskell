@@ -6,6 +6,7 @@ import qualified Tokenize as T
 data AST =
     Number Decimal |
     Negative AST |
+    BitNot AST  |
     VarGet String |
     VarSet String AST |
     FnCall String [AST] |
@@ -114,6 +115,9 @@ parseIdent :: [T.Token] -> Either [Char] ([T.Token], AST)
 parseIdent (T.Minus:tokens) = do
   (tokens2, num) <- parseIdent tokens
   Right (tokens2, Negative num)
+parseIdent (T.BitNot:tokens) = do
+  (tokens2, num) <- parseIdent tokens
+  Right (tokens2, BitNot num)
 parseIdent (T.Number n:tokens) = Right (tokens, Number n)
 parseIdent (T.Text var:tokens) = Right (tokens, VarGet var)
 parseIdent (T.Fn:T.Text var:tokens) = Right (tokens, FnCall var [])
