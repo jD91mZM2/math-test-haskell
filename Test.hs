@@ -1,3 +1,4 @@
+import Data.Char
 import Data.Decimal
 import Eval
 import Parse
@@ -90,6 +91,7 @@ main = do
   test "implicit multiplication" "100(4)" 400
   test "implicit multiplication ordering" "100 + 100(4)" 500
   test "implicit multiplication factorial" "5!(4)" 480
+  test "characters" "'B' + ('a' - 'A')" (fromIntegral $ ord 'b')
 
   putStr "testing randoms"
   testRandoms 99

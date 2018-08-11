@@ -52,6 +52,7 @@ tokenize_ ('=':input) _ tokens = tokenize_ input True $ tokens ++ [Eq]
 tokenize_ ('(':input) _ tokens = tokenize_ input True $ tokens ++ [GroupOpen]
 tokenize_ (')':input) _ tokens = tokenize_ input True $ tokens ++ [GroupClose]
 tokenize_ ('f':'n':input) True tokens = tokenize_ input False $ tokens ++ [Fn]
+tokenize_ ('\'':c:'\'':input) _ tokens = tokenize_ input True $ tokens ++ [Number (fromIntegral $ ord c)]
 tokenize_ (c:input) space tokens
   | c >= '0' && c <= '9' = do
     case (c, length input >= 2, input) of
