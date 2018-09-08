@@ -29,51 +29,49 @@ data AST =
 -- Helper functions --
 ----------------------
 
-parse :: [T.Token] -> Either [Char] AST
+parse :: [(T.Span, T.Token)] -> Either (Maybe T.Span, [Char]) AST
 parse tokens = do
   (tokens2, n) <- parseIdent tokens
   (tokens3, n2) <- parseInner tokens2 n True
-  if not $ tokens3 == []
-    then Left "tokens aren't empty after parsing correctly. this is a bug."
-    else Right n2
+  Right n2
 
-parseInner :: [T.Token] -> AST -> Bool -> Either [Char] ([T.Token], AST)
+parseInner :: [(T.Span, T.Token)] -> AST -> Bool -> Either (Maybe T.Span, [Char]) ([(T.Span, T.Token)], AST)
 parseInner tokens ast toplevel = do
   (tokens2, ast2) <- parseTopLevel tokens ast
   case tokens2 of
-    (T.Number n:_) -> Left $ "expected operator, found number " ++ show n
-    (T.GroupClose:_) -> do
+    ((span, T.Number n):_) -> Left (Just span, "expected operator, found number " ++ show n)
+    ((span, T.GroupClose):_) -> do
       if toplevel
-        then Left "expected operator, found )"
+        then Left (Just span, "expected operator, found )")
         else Right (tokens2, ast2)
     [] -> Right (tokens2, ast2)
-    _ -> do
-      Left $ "trailing input was not parsed: " ++ show tokens
+    ((span, token):_) -> do
+      Left (Just span, "trailing input was not parsed: " ++ show (map snd tokens2))
 
-type Return = Either [Char] ([T.Token], AST)
+type Return = Either (Maybe T.Span, [Char]) ([(T.Span, T.Token)], AST)
 
-parseTopLevel :: [T.Token] -> AST -> Return
+parseTopLevel :: [(T.Span, T.Token)] -> AST -> Return
 parseTopLevel = parseBitOr
 
 applyInner :: [(T.Token, (AST -> AST -> AST))] ->
             [(T.Token, (AST -> AST -> AST))] ->
-            ([T.Token] -> AST -> Return) ->
-            [T.Token] -> AST -> Return
+            ([(T.Span, T.Token)] -> AST -> Return) ->
+            [(T.Span, T.Token)] -> AST -> Return
 applyInner _ _ _ [] ast = Right ([], ast)
 applyInner _ [] nextFn tokens n1 = nextFn tokens n1
-applyInner matches ((token, kind):rest) nextFn (o:tokens) n1 = do
+applyInner matches ((token, kind):rest) nextFn tokens@((span, o):tokens2) n1 = do
   if o == token then do
-    (tokens2, tmp) <- parseIdent tokens
-    (tokens3, n2)  <- nextFn tokens2 tmp
+    (tokens3, tmp) <- parseIdent tokens2
+    (tokens4, n2)  <- nextFn tokens3 tmp
     let ast = kind n1 n2
 
-    parseTopLevel tokens3 ast
+    parseTopLevel tokens4 ast
   else
-    applyInner matches rest nextFn (o:tokens) n1
+    applyInner matches rest nextFn tokens n1
 
 apply :: [(T.Token, (AST -> AST -> AST))] ->
-            ([T.Token] -> AST -> Return) ->
-            [T.Token] -> AST -> Return
+            ([(T.Span, T.Token)] -> AST -> Return) ->
+            [(T.Span, T.Token)] -> AST -> Return
 apply matches nextFn tokens n1 = applyInner matches matches nextFn tokens n1
 
 --------------------
@@ -88,49 +86,48 @@ parsePlus = apply [(T.Plus, Add), (T.Minus, Sub)] parseMult
 parseMult = apply [(T.Mult, Mult), (T.Div, Div), (T.Rem, Rem)] parsePow
 parsePow  = apply [(T.Pow, Pow)] parseFac
 
-parseFac :: [T.Token] -> AST -> Return
-parseFac (T.Factorial:tokens) n = parseImplicitMult tokens (Factorial n)
+parseFac :: [(T.Span, T.Token)] -> AST -> Return
+parseFac ((_, T.Factorial):tokens) n = parseFac tokens (Factorial n)
 parseFac tokens ast = parseImplicitMult tokens ast
 
-parseImplicitMult :: [T.Token] -> AST -> Return
-parseImplicitMult (T.GroupOpen:tokens) n = do
-  (tokens2, group) <- parseIdent (T.GroupOpen:tokens)
+parseImplicitMult :: [(T.Span, T.Token)] -> AST -> Return
+parseImplicitMult tokens@((_, T.GroupOpen):_) n = do
+  (tokens2, group) <- parseIdent tokens
   Right (tokens2, Mult n group)
-parseImplicitMult (T.Ident ident:tokens) n = do
-  (tokens2, group) <- parseIdent (T.Ident ident:tokens)
-  Right (tokens2, Mult n group)
+parseImplicitMult ((_, T.Ident ident):tokens) n = do
+  Right (tokens, Mult n (VarGet ident))
 parseImplicitMult tokens ast = parseVar tokens ast
 
-parseVar :: [T.Token] -> AST -> Return
-parseVar (T.Eq:tokens) (VarGet var) = do
+parseVar :: [(T.Span, T.Token)] -> AST -> Return
+parseVar ((_, T.Eq):tokens) (VarGet var) = do
   (tokens2, tmp) <- parseIdent tokens
   (tokens3, val) <- parseTopLevel tokens2 tmp
   Right (tokens3, VarSet var val)
-parseVar (T.Eq:tokens) ast = Left $ "assignment expected name, got " ++ show ast
-parseVar (T.GroupClose:tokens) (FnCall name args) = Right (T.GroupClose:tokens, FnCall name args)
+parseVar ((span, T.Eq):tokens) ast = Left (Just span, "assignment expected name, got " ++ show ast)
+parseVar tokens@((_, T.GroupClose):_) (FnCall name args) = Right (tokens, FnCall name args)
 parseVar (t:tokens) (FnCall name args) = do
   (tokens2, arg) <- parseIdent (t:tokens)
   parseVar tokens2 $ FnCall name $ args ++ [arg]
 parseVar tokens ast = Right (tokens, ast)
 
-parseIdent :: [T.Token] -> Either [Char] ([T.Token], AST)
+parseIdent :: [(T.Span, T.Token)] -> Return
 
-parseIdent (T.Minus:tokens) = do
+parseIdent ((_, T.Minus):tokens) = do
   (tokens2, num) <- parseIdent tokens
   Right (tokens2, Negative num)
-parseIdent (T.BitNot:tokens) = do
+parseIdent ((_, T.BitNot):tokens) = do
   (tokens2, num) <- parseIdent tokens
   Right (tokens2, BitNot num)
-parseIdent (T.Number n:tokens) = Right (tokens, Number n)
-parseIdent (T.Ident var:tokens) = Right (tokens, VarGet var)
-parseIdent (T.Fn:T.Ident var:tokens) = Right (tokens, FnCall var [])
-parseIdent (T.GroupOpen:tokens) = do
+parseIdent ((_, T.Number n):tokens) = Right (tokens, Number n)
+parseIdent ((_, T.Ident var):tokens) = Right (tokens, VarGet var)
+parseIdent ((_, T.Fn):(_, T.Ident var):tokens) = Right (tokens, FnCall var [])
+parseIdent ((_, T.GroupOpen):tokens) = do
   (tokens2, tmp)  <- parseIdent tokens
   (tokens3, ast2) <- parseInner tokens2 tmp False
   case tokens3 of
-    [] -> Left "expected ), got EOF"
-    (T.GroupClose:tokens4) -> Right (tokens4, ast2)
-    (t:_) -> Left $ "expected ), got " ++ show t
+    [] -> Left (Nothing, "expected ), got EOF")
+    ((_, T.GroupClose):tokens4) -> Right (tokens4, ast2)
+    ((span, t):_) -> Left (Just span, "expected ), got " ++ show t)
 
-parseIdent (t:_) = Left $ "expected number, got " ++ show t
-parseIdent [] = Left "expected number, got EOF"
+parseIdent ((span, t):_) = Left (Just span, "expected number, got " ++ show t)
+parseIdent [] = Left (Nothing, "expected number, got EOF")

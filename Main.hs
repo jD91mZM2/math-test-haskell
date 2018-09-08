@@ -7,6 +7,15 @@ import Tokenize
 
 -- Because a CPP preprocessor is too much work
 isDebug = False
+prompt = "> "
+
+printSpan :: Span -> IO ()
+printSpan (Span start end) =
+  putStrLn $
+    replicate (length prompt + start) ' ' ++
+    case end of
+      Just end -> replicate (end-start) '^'
+      Nothing -> ['^']
 
 mainLoop :: M.Map String AST -> IO ()
 mainLoop map = do
@@ -18,7 +27,8 @@ mainLoop map = do
       addHistory line
 
       case tokenize line of
-        Left err -> do
+        Left (span, err) -> do
+          printSpan span
           putStrLn $ "tokenize error: " ++ err
           mainLoop map
         Right [] -> do
@@ -26,11 +36,14 @@ mainLoop map = do
           mainLoop map
         Right tokens -> do
           if isDebug
-            then putStrLn $ "Debug: " ++ show tokens
+            then putStrLn $ "Debug: " ++ show (Prelude.map snd tokens)
             else do return ()
 
           case parse tokens of
-            Left err -> do
+            Left (span, err) -> do
+              case span of
+                Just span -> printSpan span
+                Nothing -> return ()
               putStrLn $ "parse error: " ++ err
               mainLoop map
             Right ast -> do

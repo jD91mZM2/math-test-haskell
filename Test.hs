@@ -1,3 +1,4 @@
+import Control.Arrow
 import Data.Char
 import Data.Decimal
 import Eval
@@ -8,8 +9,8 @@ import qualified Data.HashMap as M
 
 calc :: [Char] -> Either [Char] Decimal
 calc input = do
-  tokens <- tokenize input
-  ast <- parse tokens
+  tokens <- left snd $ tokenize input
+  ast <- left snd $ parse tokens
   (_, result) <- eval M.empty ast
   Right result
 
