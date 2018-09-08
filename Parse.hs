@@ -96,6 +96,9 @@ parseImplicitMult :: [T.Token] -> AST -> Return
 parseImplicitMult (T.GroupOpen:tokens) n = do
   (tokens2, group) <- parseIdent (T.GroupOpen:tokens)
   Right (tokens2, Mult n group)
+parseImplicitMult (T.Ident ident:tokens) n = do
+  (tokens2, group) <- parseIdent (T.Ident ident:tokens)
+  Right (tokens2, Mult n group)
 parseImplicitMult tokens ast = parseVar tokens ast
 
 parseVar :: [T.Token] -> AST -> Return
@@ -119,8 +122,8 @@ parseIdent (T.BitNot:tokens) = do
   (tokens2, num) <- parseIdent tokens
   Right (tokens2, BitNot num)
 parseIdent (T.Number n:tokens) = Right (tokens, Number n)
-parseIdent (T.Text var:tokens) = Right (tokens, VarGet var)
-parseIdent (T.Fn:T.Text var:tokens) = Right (tokens, FnCall var [])
+parseIdent (T.Ident var:tokens) = Right (tokens, VarGet var)
+parseIdent (T.Fn:T.Ident var:tokens) = Right (tokens, FnCall var [])
 parseIdent (T.GroupOpen:tokens) = do
   (tokens2, tmp)  <- parseIdent tokens
   (tokens3, ast2) <- parseInner tokens2 tmp False
