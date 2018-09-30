@@ -68,16 +68,16 @@ tokenize_ (c:input) i tokens
         let predicate = (\c -> (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))
         let (text, len, input3) = splitWhile predicate input2
         let [(num, _)] = readHex text
-        tokenize_ input3 (i+len) (tokens ++ [(Span i (Just $ i+len), Number num)])
+        tokenize_ input3 (i+2+len) (tokens ++ [(Span (i+2) (Just $ i+2+len), Number num)])
       ('0', True, ('o':input2)) -> do
         let (text, len, input3) = splitWhile (\c -> c >= '0' && c <= '7') input2
         let [(num, _)] = readOct text
-        tokenize_ input3 (i+len) (tokens ++ [(Span i (Just $ i+len), Number num)])
+        tokenize_ input3 (i+2+len) (tokens ++ [(Span (i+2) (Just $ i+2+len), Number num)])
       ('0', True, ('b':input2)) -> do
         let convert = (subtract $ ord '0') . ord
         let (text, len, input3) = splitWhile (\c -> c == '0' || c == '1') input2
         let [(num, _)] = readInt 2 (const True) convert text
-        tokenize_ input3 (i+len) (tokens ++ [(Span i (Just $ i+len), Number num)])
+        tokenize_ input3 (i+2+len) (tokens ++ [(Span (i+2) (Just $ i+2+len), Number num)])
       _ -> do
         let (text, len, input3) = splitWhile (\c -> (c >= '0' && c <= '9') || c == '.') (c:input)
         let num = read text

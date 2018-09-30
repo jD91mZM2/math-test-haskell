@@ -93,6 +93,7 @@ main = do
   test "implicit multiplication ordering" "100 + 100(4)" 500
   test "implicit multiplication factorial" "5!(4)" 480
   test "characters" "'B' + ('a' - 'A')" (fromIntegral $ ord 'b')
+  test "exponential ordering" "2**3**4" 2417851639229258349412352
 
   putStr "testing randoms"
   testRandoms 99

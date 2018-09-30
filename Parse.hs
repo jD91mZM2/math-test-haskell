@@ -84,7 +84,13 @@ parseBitShift = apply [(T.BitShiftL, BitShiftL), (T.BitShiftR, BitShiftR)] parse
 
 parsePlus = apply [(T.Plus, Add), (T.Minus, Sub)] parseMult
 parseMult = apply [(T.Mult, Mult), (T.Div, Div), (T.Rem, Rem)] parsePow
-parsePow  = apply [(T.Pow, Pow)] parseFac
+
+parsePow :: [(T.Span, T.Token)] -> AST -> Return
+parsePow ((_, T.Pow):tokens) n = do
+  (tokens2, n2) <- parseIdent tokens
+  (tokens3, n3) <- parsePow tokens2 n2
+  parsePow tokens3 (Pow n n3)
+parsePow tokens ast = parseFac tokens ast
 
 parseFac :: [(T.Span, T.Token)] -> AST -> Return
 parseFac ((_, T.Factorial):tokens) n = parseFac tokens (Factorial n)
