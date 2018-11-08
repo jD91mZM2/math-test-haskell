@@ -57,7 +57,7 @@ executable math-test
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.10 && <4.11, readline, Decimal, hashmap
+  build-depends:       base >=4.11 && <4.12, readline, Decimal, hashmap
   
   -- Directories containing source files.
   -- hs-source-dirs:      
